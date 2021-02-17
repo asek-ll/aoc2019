@@ -43,5 +43,31 @@ class Day18Test {
 
     val day18map = fromPuzzleInput(18)
     assertEquals(3270, Day18.part1(day18map))
+
+    val b = List(
+      "#######",
+      "#a.#Cd#",
+      "##...##",
+      "##.@.##",
+      "##...##",
+      "#cB#Ab#",
+      "#######",
+      )
+
+    assertEquals(8, Day18.part2(b))
+
+    assertEquals(72, Day18.part2(List(
+      "#############",
+      "#g#f.D#..h#l#",
+      "#F###e#E###.#",
+      "#dCba...BcIJ#",
+      "#####.@.#####",
+      "#nK.L...G...#",
+      "#M###N#H###.#",
+      "#o#m..#i#jk.#",
+      "#############",
+      )))
+
+    assertEquals(1628, Day18.part2(day18map))
   }
 }

@@ -24,11 +24,13 @@ enum Point:
     case Start => "Start"
     case Key(id) => s"Key ${(id + 'a'.toInt).toChar}"
     case Door(id) => s"Door ${(id + 'A'.toInt).toChar}"
+    case Robot(id) => s"Robot $id"
   }
 
   case Start
   case Key(val id: Int)
   case Door(val id: Int)
+  case Robot(val id: Int)
 
 type Keyring = Set[Int]
 
@@ -43,6 +45,7 @@ def parsePoint(ch: Char): Option[Point] = ch match {
   case '@' => Some(Point.Start)
   case x if x.isUpper => Some(Point.Door(x.toInt - 'A'.toInt))
   case x if x.isLower => Some(Point.Key(x.toInt - 'a'.toInt))
+  case x if x.isDigit => Some(Point.Robot(x.toInt - '0'))
   case _ => None
 }
   
@@ -91,8 +94,9 @@ def explore(area: Area, initPos: Pos): List[Target] =
 
 type Relations = Map[Point, Map[Point, Int]]
 def exp(area: Area): Relations = 
+  exp(area, findPoints(area))
 
-  val points = findPoints(area)
+def exp(area: Area, points: Seq[(Point, Pos)]): Relations = 
   points
     .flatMap((point, pos) => {
       val ts = explore(area, pos)
@@ -104,26 +108,34 @@ def exp(area: Area): Relations =
 
 
 
-case class StateKey(val point: Point, val keys: Keyring = Set())
+case class StateKey(val points: List[Point], val keys: Keyring = Set())
 case class State(val key: StateKey, val dist: Int = 0)
 
 def search(rels: Relations, initState: State): Int =
   val queue = PriorityQueue(initState)(Ordering.by[State, Int](_.dist).reverse)
   val visited: HashSet[StateKey] = HashSet()
+  val keyCount = rels.keySet
+    .count(p => p match {
+      case Point.Key(_) => true
+      case _ => false
+    })
   
   while (!queue.isEmpty) {
     val from = queue.dequeue()  
+    if from.key.keys.size == keyCount then return from.dist
     if !visited.contains(from.key) then {
       visited += from.key
 
-      val targets = getNext(SearchState(from.key.point, from.key.keys), rels)
+      for (pidx <- from.key.points.indices) {
+        val p = from.key.points(pidx)
+        val targets = getNext(SearchState(p, from.key.keys), rels)
 
-      if targets.isEmpty then return from.dist
-      for (t <- targets) {
-        val dist = from.dist + t._2
-        val keys = from.key.keys + t._1.id
-        val nextState = State(StateKey(t._1, keys), dist)
-        queue.enqueue(nextState)
+        for (t <- targets) {
+          val dist = from.dist + t._2
+          val keys = from.key.keys + t._1.id
+          val nextState = State(StateKey(from.key.points.updated(pidx, t._1), keys), dist)
+          queue.enqueue(nextState)
+        }
       }
     }
   }
@@ -165,4 +177,25 @@ def getNext(state: SearchState, rels: Relations, visited: Set[Point] = Set()): L
 
 def part1(area: Area): Int =
   val rels = exp(area)
-  search(rels, State(StateKey(Point.Start)))
+  search(rels, State(StateKey(List(Point.Start))))
+
+
+def part2(area: Area): Int =
+  val points = findPoints(area)
+
+  val startPos = points
+    .find(_._1 == Point.Start)
+    .map(_._2)
+    .get
+
+  val replacement = Map((startPos._2-1) -> "1#2", (startPos._2) -> "###", (startPos._2 + 1) -> "3#4")
+
+  val patchedMap = area.indices
+    .map(idx => replacement.get(idx) match {
+      case Some(r) => area(idx).patch(startPos._1-1, r, 3)
+      case _ => area(idx)
+    })
+    .toList
+
+  val rels = exp(patchedMap)
+  search(rels, State(StateKey(List(Point.Robot(1),Point.Robot(2),Point.Robot(3),Point.Robot(4)))))
