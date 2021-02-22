@@ -9,5 +9,6 @@ class Day23Test {
     var program = fromPuzzleInput(23).toIntCode;
 
     assertEquals(23213, Day23.part1(program))
+    assertEquals(17874, Day23.part2(program))
   }
 }
