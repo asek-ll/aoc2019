@@ -16,13 +16,14 @@ extension (c: Code)
     case l: Long => l
   }
 
+def compactCode(c: Long): Code =
+  if c.isValidInt
+  then c.toInt
+  else c
+
+
 extension (c1: Code)
-  def +(c2: Code): Code = {
-    val sum = c1.toLong + c2.toLong
-    if sum.isValidInt
-    then sum.toInt
-    else sum
-  }
+  def +(c2: Code): Code = compactCode(c1.toLong + c2.toLong)
 
 extension (c1: Code)
   def *(c2: Code): Code = {
@@ -39,6 +40,5 @@ extension (lines: List[String])
   def toIntCode: IntCode =
     lines(0)
       .split(",")
-      .map(_.toInt)
+      .map(x => compactCode(x.toLong))
       .toList
-  
